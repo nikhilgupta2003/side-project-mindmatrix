@@ -1,0 +1,5 @@
+{
+  "name": "VolunteerConnect",
+  "description": "A platform connecting students with local volunteering opportunities and tracking community impact.",
+  "requestFramePermissions": ["geolocation"]
+}
