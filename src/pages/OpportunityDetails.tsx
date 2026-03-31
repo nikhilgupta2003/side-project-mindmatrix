@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Calendar, MapPin, Clock, Building2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Building2, ArrowLeft, CheckCircle2, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Opportunity } from '../types';
 import toast from 'react-hot-toast';
@@ -51,18 +51,47 @@ export default function OpportunityDetails() {
     }
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: opportunity?.title,
+      text: opportunity?.description,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
   if (loading) return <div className="pt-32 text-center">Loading...</div>;
   if (!opportunity) return <div className="pt-32 text-center">Opportunity not found.</div>;
 
   return (
     <div className="max-w-5xl mx-auto px-6 pt-24 pb-32">
-      <button 
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-stone-400 hover:text-brand-olive mb-8 transition-colors"
-      >
-        <ArrowLeft size={20} />
-        <span className="text-sm font-medium uppercase tracking-widest">Back to Explore</span>
-      </button>
+      <div className="flex items-center justify-between mb-8">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-stone-400 hover:text-brand-olive transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium uppercase tracking-widest">Back to Explore</span>
+        </button>
+
+        <button 
+          onClick={handleShare}
+          className="flex items-center gap-2 text-stone-400 hover:text-brand-olive transition-colors"
+        >
+          <Share2 size={20} />
+          <span className="text-sm font-medium uppercase tracking-widest">Share</span>
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <motion.div

@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import OpportunityDetails from './pages/OpportunityDetails';
 import Profile from './pages/Profile';
+import AddOpportunity from './pages/AddOpportunity';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/opportunity/:id" element={<OpportunityDetails />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/add-opportunity" element={<AddOpportunity />} />
           </Routes>
         </main>
         <Toaster position="top-center" />

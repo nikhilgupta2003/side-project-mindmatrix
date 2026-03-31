@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, User, Calendar, Home } from 'lucide-react';
+import { Heart, User, Home, PlusCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -13,6 +13,7 @@ export default function Navbar() {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
+    { path: '/add-opportunity', icon: PlusCircle, label: 'Add Event' },
     { path: '/profile', icon: User, label: 'Profile' },
   ];
 

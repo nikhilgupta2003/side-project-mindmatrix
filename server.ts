@@ -26,7 +26,9 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS volunteers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL
+    email TEXT UNIQUE NOT NULL,
+    bio TEXT,
+    profile_picture_url TEXT
   );
 
   CREATE TABLE IF NOT EXISTS registrations (
@@ -73,6 +75,19 @@ async function startServer() {
     res.json(opportunities);
   });
 
+  app.post("/api/opportunities", (req, res) => {
+    const { title, description, organization, date, location, category, image_url, hours } = req.body;
+    try {
+      const result = db.prepare(`
+        INSERT INTO opportunities (title, description, organization, date, location, category, image_url, hours)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(title, description, organization, date, location, category, image_url, hours);
+      res.json({ id: result.lastInsertRowid });
+    } catch (e) {
+      res.status(400).json({ error: "Error creating opportunity" });
+    }
+  });
+
   app.get("/api/opportunities/:id", (req, res) => {
     const opportunity = db.prepare("SELECT * FROM opportunities WHERE id = ?").get(req.params.id);
     if (!opportunity) return res.status(404).json({ error: "Not found" });
@@ -86,6 +101,23 @@ async function startServer() {
       res.json({ id: result.lastInsertRowid });
     } catch (e) {
       res.status(400).json({ error: "Already registered or error" });
+    }
+  });
+
+  app.get("/api/volunteer/:id", (req, res) => {
+    const volunteer = db.prepare("SELECT * FROM volunteers WHERE id = ?").get(req.params.id);
+    if (!volunteer) return res.status(404).json({ error: "Not found" });
+    res.json(volunteer);
+  });
+
+  app.patch("/api/volunteer/:id", (req, res) => {
+    const { name, bio, profile_picture_url } = req.body;
+    try {
+      db.prepare("UPDATE volunteers SET name = ?, bio = ?, profile_picture_url = ? WHERE id = ?")
+        .run(name, bio, profile_picture_url, req.params.id);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(400).json({ error: "Error updating profile" });
     }
   });
 

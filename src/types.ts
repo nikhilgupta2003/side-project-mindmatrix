@@ -14,6 +14,8 @@ export interface Volunteer {
   id: number;
   name: string;
   email: string;
+  bio?: string;
+  profile_picture_url?: string;
 }
 
 export interface Registration {

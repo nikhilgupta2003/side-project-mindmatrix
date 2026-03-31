@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
-import { Calendar, Clock, Award, CheckCircle2, MapPin } from 'lucide-react';
+import { Calendar, Clock, Award, CheckCircle2, MapPin, UserCircle, Edit2, Camera, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Volunteer } from '../types';
 
 interface Registration {
   id: number;
@@ -20,19 +21,31 @@ interface Stat {
 }
 
 export default function Profile() {
+  const [volunteer, setVolunteer] = useState<Volunteer | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', bio: '', profile_picture_url: '' });
 
   const volunteerId = 1; // Mock current user
 
   const fetchData = async () => {
-    const [regRes, statRes] = await Promise.all([
+    const [volRes, regRes, statRes] = await Promise.all([
+      fetch(`/api/volunteer/${volunteerId}`),
       fetch(`/api/volunteer/${volunteerId}/registrations`),
       fetch(`/api/volunteer/${volunteerId}/stats`)
     ]);
+    const volData = await volRes.json();
     const regData = await regRes.json();
     const statData = await statRes.json();
+    
+    setVolunteer(volData);
+    setEditForm({ 
+      name: volData.name || '', 
+      bio: volData.bio || '', 
+      profile_picture_url: volData.profile_picture_url || '' 
+    });
     setRegistrations(regData);
     setStats(statData);
     setLoading(false);
@@ -50,6 +63,26 @@ export default function Profile() {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch(`/api/volunteer/${volunteerId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm)
+    });
+    if (res.ok) {
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
+      fetchData();
+    } else {
+      toast.error('Failed to update profile');
+    }
+  };
+
+  const isProfileIncomplete = volunteer && (!volunteer.bio || !volunteer.profile_picture_url);
+
+  if (loading) return <div className="pt-32 text-center serif italic">Loading your profile...</div>;
+
   const totalHours = registrations
     .filter(r => r.status === 'completed')
     .reduce((acc, curr) => acc + curr.hours, 0);
@@ -59,19 +92,79 @@ export default function Profile() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 pt-24 pb-32">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="serif text-5xl font-light mb-2"
+      {isProfileIncomplete && !isEditing && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 bg-amber-50 border border-amber-100 p-6 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+              <Info size={24} />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-medium text-amber-900">Complete your profile</h3>
+              <p className="text-amber-700/70 text-sm">Add a bio and profile picture to help organizations know you better.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="px-6 py-3 bg-amber-600 text-white rounded-full text-sm font-bold uppercase tracking-widest hover:bg-amber-700 transition-all shadow-sm"
           >
-            Hello, <span className="italic">Alex</span>.
-          </motion.h1>
-          <p className="text-stone-500">You've made a difference in your community.</p>
+            Complete Now
+          </button>
+        </motion.div>
+      )}
+
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <div className="relative group">
+            {volunteer?.profile_picture_url ? (
+              <img 
+                src={volunteer.profile_picture_url} 
+                alt={volunteer.name} 
+                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-24 h-24 bg-stone-100 text-stone-300 rounded-full flex items-center justify-center border-4 border-white shadow-md">
+                <UserCircle size={64} />
+              </div>
+            )}
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="absolute bottom-0 right-0 p-2 bg-white text-stone-600 rounded-full shadow-sm border border-stone-100 hover:text-brand-olive transition-colors"
+            >
+              <Camera size={16} />
+            </button>
+          </div>
+          <div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="serif text-5xl font-light mb-2"
+            >
+              Hello, <span className="italic">{volunteer?.name.split(' ')[0]}</span>.
+            </motion.h1>
+            <p className="text-stone-500 max-w-md">
+              {volunteer?.bio || "You haven't added a bio yet. Tell us about yourself!"}
+            </p>
+          </div>
         </div>
         
         <div className="flex gap-4">
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="bg-white p-4 rounded-3xl border border-stone-100 shadow-sm flex items-center gap-3 hover:bg-stone-50 transition-colors"
+          >
+            <div className="w-10 h-10 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center">
+              <Edit2 size={20} />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400">Profile</p>
+              <p className="text-sm font-serif font-bold">Edit Info</p>
+            </div>
+          </button>
           <div className="bg-white p-4 rounded-3xl border border-stone-100 shadow-sm flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-olive/10 text-brand-olive rounded-full flex items-center justify-center">
               <Clock size={20} />
@@ -92,6 +185,66 @@ export default function Profile() {
           </div>
         </div>
       </header>
+
+      {isEditing && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-stone-900/40 backdrop-blur-sm"
+        >
+          <div className="bg-white w-full max-w-xl rounded-[40px] p-10 shadow-2xl overflow-hidden relative">
+            <h2 className="serif text-3xl font-semibold mb-8">Edit Profile</h2>
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.name}
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-olive/20 transition-all"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Profile Picture URL</label>
+                <input 
+                  type="url" 
+                  value={editForm.profile_picture_url}
+                  onChange={e => setEditForm({ ...editForm, profile_picture_url: e.target.value })}
+                  className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-olive/20 transition-all"
+                  placeholder="https://images.unsplash.com/..."
+                />
+                <p className="mt-1 text-[10px] text-stone-400">Use a link to an image (e.g., from Unsplash or your social media)</p>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 mb-2">Short Bio</label>
+                <textarea 
+                  value={editForm.bio}
+                  onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                  className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-olive/20 transition-all min-h-[120px]"
+                  placeholder="Tell us about your background and why you volunteer..."
+                />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="submit"
+                  className="flex-1 px-6 py-4 bg-brand-olive text-white rounded-full text-sm font-bold uppercase tracking-widest hover:bg-stone-700 transition-all shadow-lg shadow-brand-olive/20"
+                >
+                  Save Changes
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-8 py-4 bg-stone-100 text-stone-600 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-stone-200 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
